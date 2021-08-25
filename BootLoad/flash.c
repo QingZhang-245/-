@@ -29,7 +29,7 @@ uint32_t Flash_status()
     while((FLASH_SR & ((uint32_t)0x00000001)) == ((uint32_t)0x00000001) && (Timeout != 0x00))//BSY在忙状态
         {
             Timeout--;
-            if((FLASH_SR & ((uint32_t)0x00000001)) == ((uint32_t)0x00000001))
+            if((FLASH_SR & ((uint32_t)0x00000001)) == ((uint32_t)0x00000001))//还在忙
                 {
                     FLASHStatus = 0;
                 }
@@ -53,19 +53,19 @@ uint32_t Flash_status()
 void Flash_Erase()
 {
     //计算要一共的页数
-    uint32_t Status = 1;
+    uint32_t FLASHStatus = 1;
     uint32_t NbrOfPage = (WRITE_END_ADDR - WRITE_START_ADDR) / FLASH_PAGE_SIZE;
     Flash_Unlock();
     Flash_Init();
 
-    Status = Flash_status();
+    FLASHStatus = Flash_status();
     uint32_t EraseCounter = 0;
-    while ((EraseCounter < NbrOfPage) && (Status == 1))
+    while ((EraseCounter < NbrOfPage) && (FLASHStatus == 1))
     {
         FLASH_CR |= (1<<1);//PER位，页擦除 
-        FLASH_AR = WRITE_START_ADDR + (FLASH_PAGE_SIZE * EraseCounter); 
+        FLASH_AR = (WRITE_START_ADDR + (FLASH_PAGE_SIZE * EraseCounter)); 
         FLASH_CR |= (1<<6);
-        Status = Flash_status();
+        FLASHStatus = Flash_status();
         FLASH_CR &= ((uint32_t)0x00001FFD);//结束擦除
         EraseCounter++;
     }
@@ -74,9 +74,9 @@ void Flash_Erase()
 
 
 //写入数据，写入地址
-int Flash_Write(uint8_t AllData[2048],uint32_t NowAddr)
+int Flash_Write(uint8_t Data[128],uint32_t NowAddr)
 {
-    uint32_t status;
+    uint32_t FLASHStatus;
     uint16_t data16_t;
     uint32_t Address;
     //解锁
@@ -84,25 +84,25 @@ int Flash_Write(uint8_t AllData[2048],uint32_t NowAddr)
     //清除标志位
     Flash_Init();
     Address = NowAddr;
-
-    status = Flash_status();
-    if(status == 1)
+/*
+    FLASHStatus = Flash_status();
+    if(FLASHStatus == 1)
     {
         FLASH_CR |= (1<<1);//PER位，页擦除 
         FLASH_AR = Address;
         FLASH_CR |= (1<<6);
-        status = Flash_status();
+        FLASHStatus = Flash_status();
         FLASH_CR &= ((uint32_t)0x00001FFD);//结束擦除
     }
-    
-    status = Flash_status();
+*/
+    FLASHStatus = Flash_status();
     int num = 0;
-    while ((num<2048) && (status == 1))//在进行写的时候不能进行读操作，会上锁
+    while ((num<128) && (FLASHStatus == 1))//在进行写的时候不能进行读操作，会上锁
     {
-        data16_t = ((AllData[num]) | (AllData[num+1]<<8));
+        data16_t = ((Data[num]) | (Data[num+1]<<8));
         FLASH_CR |= (1<<0);//开始编程
         *(volatile uint16_t*)Address = (uint16_t)data16_t;
-        status = Flash_status();
+        FLASHStatus = Flash_status();
         FLASH_CR &= ((uint32_t)0x00001FFE);
         Address = Address + 2;
         num = num + 2;
@@ -111,16 +111,12 @@ int Flash_Write(uint8_t AllData[2048],uint32_t NowAddr)
     Flash_Lock();
     //检查写入正确
     Address = NowAddr;
-    for(int num = 0;num<2048;)
+    for(int num = 0;num<128;)
     {
-        data16_t = ((AllData[num]) | (AllData[num+1]<<8));
-        //USART_SendData(data16_t);
-        //USART_SendData((uint16_t)(0x11));
-        //USART_SendData(*(volatile uint16_t*)Address);
+        data16_t = ((Data[num]) | (Data[num+1]<<8));
         if((*(volatile uint16_t*)Address) != data16_t)
         {
             if(IF){USART_SendData(data16_t);}
-            if(IF){USART_SendData((uint16_t)(0x33));}
             if(IF){USART_SendData(*(volatile uint16_t*)Address);}
             return 1;
         }

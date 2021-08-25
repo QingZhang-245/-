@@ -1,7 +1,6 @@
 #include "inc.h"
 extern void USART_SendData(uint16_t Data);
-extern void USART_SendString(char *str);
-extern void USART_SendHalfWord(uint16_t ch);
+
 extern void TIM6_ms_ON(uint16_t ms);
 extern int TIM6_ms_OFF();
 extern void Flash_Erase();
@@ -24,7 +23,6 @@ typedef struct
 	uint8_t check_sum;
 }Xmoden_Typedef;
 
-uint8_t AllData[2048];
 
 int RecData(Xmoden_Typedef* Message,int number,uint32_t* NowAddr)
 {
@@ -47,7 +45,6 @@ int RecData(Xmoden_Typedef* Message,int number,uint32_t* NowAddr)
             if(*addr == EOT)//接收完成
                 {
                     if(IF){USART_SendData((uint16_t)(0x52));}
-                    Flash_Write(AllData,(*NowAddr));
                     return 0;
                 }
             else 
@@ -87,26 +84,13 @@ int RecData(Xmoden_Typedef* Message,int number,uint32_t* NowAddr)
             if(IF){USART_SendData((uint16_t)(0x59));}
             return -4;
         }
-    if((Message->Number%16) == 0)//写入一片
-    {
-        for(m = 0;m<128;m++)
+
+    if(Flash_Write(Message->Data,(*NowAddr)))
         {
-            AllData[15*128+m] = Message->Data[m];
+            return -4;
         }
-        Flash_Write(AllData,(*NowAddr));
-        *NowAddr = (*NowAddr) + FLASH_PAGE_SIZE;
-        for(m=0;m<2048;m++)//内容清零
-        {
-            AllData[m] = 0xFF;
-        }
-    }
-    else//为满一片积累起来
-    {
-        for(m = 0;m<128;m++)
-        {
-            AllData[((number%16)-1)*128+m] = Message->Data[m];
-        }
-    }
+    (*NowAddr) = (*NowAddr) + 128;
+
     if(IF){USART_SendData((uint16_t)(0x5A));}
     return 1;//校验无误，发送ACK
 }
@@ -118,11 +102,6 @@ void xmodem()
     Xmoden_Typedef Message[50];
     uint8_t number = 0x01;
     uint32_t NowAddr = WRITE_START_ADDR;
-    for(uint32_t m=0;m<2048;m++)//内容清1
-        {
-            AllData[m] = 0xFF;
-        }
-    //Flash_Erase();
 
     while (1)//开始接收数据
     {

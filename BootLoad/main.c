@@ -1,19 +1,18 @@
 #include "inc.h"
-#define TIME 				 (unsigned int)(0xFFFFF)
+
 extern void Usart_Init();
 extern void USART_SendData(uint16_t Data);
-extern void USART_SendString(char *str);
 extern void USART_SendHalfWord(uint16_t ch);
 extern void xmodem();
+extern void Flash_Erase();
 
-void delay_ms(uint16_t ms);
-void delay_s(uint16_t s);
 void TIM6_ms_ON(uint16_t ms);
 int  TIM6_ms_OFF();
 void Led_Init();
 void Key_Init();
 int  Key_check();
 void Jump();
+void Usart_test(void);
 
 int main(void)
 {
@@ -21,25 +20,23 @@ int main(void)
 	Led_Init();//LEDGPIO初始化
 	Key_Init();
 	Usart_Init();//串口初始化
+	Usart_test();
 
-	TIM6_ms_ON(2000);
-	while (1)
+/*
+	TIM6_ms_ON(5000);
+	while (!TIM6_ms_OFF())
 	{
-		USART_SendData((uint16_t)0x99);
-		if(TIM6_ms_OFF())
-		{
-			LED_Blue_ON;
-			Jump();
-			//LED_Green_OFF;
-			break;
-		}
-		else if(Key_check())
-		{
-			LED_OFF;
-			LED_Red_ON;
-			xmodem();
-		}
+		if(Key_check())
+			{
+				Flash_Erase();
+				LED_Red_ON;
+				xmodem();
+				LED_Red_OFF;
+			}
 	}
+	LED_Blue_ON;
+	Jump();
+*/
 	return 0;
 }
 
@@ -94,10 +91,29 @@ int Key_check()
 	}
 }
 
+void TIM6_ms_ON(uint16_t ms)//打开延时
+{
+	TIM6_PSC = (41000-1);
+	TIM6_ARR = (ms*2);
+	TIM6_EGR |= (1<<0);
+	TIM6_SR = 0;
+	TIM6_CR1 |= (1<<3);
+	TIM6_CR1 |= (1<<0);
+}
+int TIM6_ms_OFF()//延时未到返回0，延时到了返回1
+{
+	if((TIM6_SR & 0x01)==0)
+		return 0;
+	else
+	{
+		TIM6_SR &= ~(1<<0);
+		return 1;
+	}
+}
 
 void MCO_Init()
 {
-/*	//由于GPIO口最大输出频率为50MHz，测得系统输出最大是25M？
+	//由于GPIO口最大输出频率为50MHz，测得系统输出最大是25M？
 	//设置GPIOA 8  MCO 系统时钟
     RCC_APB2ENR |= (1<<2);
     //清空控制PA8的端口位
@@ -105,7 +121,6 @@ void MCO_Init()
     //配置PA8为复用推挽输出，速度为50M 1011
     GPIOA_CRH |= (0x0B<<4*0);
 	RCC_CFGR |= (0x07000000);
-*/
 }
 
 //ms级延时函数
@@ -133,25 +148,7 @@ void delay_ms(uint16_t ms)
 	TIM6_SR &= ~(1<<0);
 }
 
-void TIM6_ms_ON(uint16_t ms)//打开延时
-{
-	TIM6_PSC = (41000-1);
-	TIM6_ARR = (ms*2);
-	TIM6_EGR |= (1<<0);
-	TIM6_SR = 0;
-	TIM6_CR1 |= (1<<3);
-	TIM6_CR1 |= (1<<0);
-}
-int TIM6_ms_OFF()//延时未到返回0，延时到了返回1
-{
-	if((TIM6_SR & 0x01)==0)
-		return 0;
-	else
-	{
-		TIM6_SR &= ~(1<<0);
-		return 1;
-	}
-}
+
 
 void delay_s(uint16_t s)//秒级延时
 {
@@ -176,54 +173,30 @@ void delay_s(uint16_t s)//秒级延时
 	TIM6_SR &= ~(1<<0);
 }
 
-/*
-	//char rec[20];
-	//char* p=&rec[0];
-	char *chr="10111";
-	int times=0;
-	char ch;
-	uint16_t ack = 0x06;
-
 
 //发送数据包
+void Usart_test(void)
+{
+	char rec[20];
+	char* p=&rec[0];
+	uint16_t ch;
+	
+	//原样发送
 	while (1)
 	{
 		if((USART1_SR & (1<<5)) != 0)	//读数据非空
 		{
-			for(int m=0;m<10;m++)
-			{
-				*(p + m) = (uint8_t)(USART1_DR & (uint16_t)0x01FF);//收到信号
-				m++;
-			}
-			times++;
-			USART_SendString(ch);
-			time = (char)(times);
-			USART_SendData(time);
-			
-			for(int i=0;i<10;i++)
-			{
-				//while((USART1_SR & (1<<7)) == 0){}
-				USART_SendData(ch);
-				//USART_SendData(rec[i]);//原样发送
-				i++;
-				//while ((USART1_SR & (1<6)) == 0){}
-			}
-			//while((USART1_SR & 0x80) == 0){}
-			//USART_SendData(rec[5]);
-		}
-		else
-		{
-			//delay_ms(1);
+			ch = (uint16_t)(USART1_DR & (uint16_t)0x01FF);//收到信号
+			USART_SendData(ch);
 		}
 	}
-
-//发送单字节
+/*
+	//发送单字节
 	while(1)
 	{	
 		if((USART1_SR & (1<<5)) != 0)	//读数据非空
 		{
 			ch = (char)(USART1_DR & (uint16_t)0x01FF);//收到信号
-			//USART1_DR = (((uint16_t)ch) & ((uint16_t)0x01FF));
 			switch(ch)
 			{
 				case '1':
@@ -238,9 +211,7 @@ void delay_s(uint16_t s)//秒级延时
 					break;
 			}
 		}
-		else
-		{
-			//Delay(1);
-		}
 	}
 */
+}
+	

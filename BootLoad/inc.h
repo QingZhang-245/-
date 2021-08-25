@@ -58,7 +58,13 @@ typedef unsigned              char uint8_t;
 #define  RE          1        //0：禁止接收；1：使能接收，并开始搜寻RX引脚上的起始位。
 #define  CTSE        0        //0：禁止CTS硬件流控制；1：CTS模式使能
 #define  RTSE        0        //0：禁止RTS硬件流控制；1：RTS中断使能
-#define  PCLK2_Frequency      72000000
+
+//#define HSE
+#ifdef HSE
+    #define  PCLK2_Frequency      72000000
+#else 
+    #define  PCLK2_Frequency      64000000
+#endif//HSE
 //-------------------------GPIO----------------------------------
 /*GPIOA外设基地址*/
 #define GPIOA_BASE			(APB2PERIPH_BASE + 0x0800)

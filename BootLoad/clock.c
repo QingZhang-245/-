@@ -1,5 +1,7 @@
 #include"inc.h"
 
+
+#ifdef HSE
 //按照系统初始化来配置的，HSE外部72M时钟
 void SysClock()
 {
@@ -18,14 +20,13 @@ void SysClock()
   // Disable all interrupts and clear pending bits
   RCC_CIR = 0x009F0000;
 
-  /* Reset HSEON bit */
+  // Reset HSEON bit 
   RCC_CR &= ((uint32_t)0xFFFEFFFF);
-  /* Reset HSEBYP bit */
+  // Reset HSEBYP bit 
   RCC_CR &= ((uint32_t)0xFFFBFFFF);
   // 使能 HSE
   RCC_CR |= (1<<16);  //0x0001 0000
-  //Led_Init();
-  //LED_OFF;
+
   do
   {
     HSEStatus = (RCC_CR & (1<<17));  //0x0002 0000
@@ -61,7 +62,7 @@ void SysClock()
     RCC_CFGR |= (1<<16);
     //设置倍频
     RCC_CFGR |= (uint32_t)(0x001C0000);//0111 00  0000  0000  0000  0000
-    //LED_Blue_ON;
+
     // 使能锁相环
     RCC_CR |= (1<<24);
     //等待PLL就绪
@@ -84,38 +85,41 @@ void SysClock()
       HSEStatus = (RCC_CFGR & (uint32_t)0x0000000C);
       StartUpCounter++;
     } while((HSEStatus != (uint32_t)0x06) && (StartUpCounter !=((uint32_t)0xF)));
-    //LED_Green_ON;
   }
   else
   { // If HSE fails to start-up, the application will have wrong clock configuration. User can add here some code to deal with this error 
-      //LED_Red_ON;
-      //LED_Blue_ON;
-      //LED_Green_ON;
+  
   }
 }
 
 
-/*
-//使用内部时钟HSI，第三版,不可用
+#else
+//使用内部8M*16=64MHz时钟HSI
 void SysClock()
 {
   uint32_t StartUpCounter = 0, HSEStatus = 0;
+
   // Set HSION bit 
   RCC_CR |= (uint32_t)0x00000001;
+  /* Reset SW, HPRE, PPRE1, PPRE2, ADCPRE and MCO bits */
+  RCC_CFGR &= (uint32_t)0xF0FF0000;
   // Reset HSEON, CSSON and PLLON bits 
   RCC_CR &= (uint32_t)0xFEF6FFFF;
   // Reset HSEBYP bit 
-  //RCC_CR &= (uint32_t)0xFFFBFFFF;
+  RCC_CR &= (uint32_t)0xFFFBFFFF;
   // Reset PLLSRC, PLLXTPRE, PLLMUL and USBPRE/OTGFSPRE bits 
   RCC_CFGR &= (uint32_t)0xFF80FFFF;
+  /* Disable all interrupts and clear pending bits  */
+  RCC_CIR = 0x009F0000;
+
 
   // 使能 HSI
-  RCC_CR |= ((uint32_t)0x00000001);  
+  RCC_CR |= (1<<0);  
   do
   {
-    HSEStatus = (RCC_CR & ((uint32_t)0x00000002)); 
+    HSEStatus = (RCC_CR & (1<<1)); 
     StartUpCounter++;  
-  } while((HSEStatus == 0) && (StartUpCounter !=((uint16_t)0x0500)));
+  } while((HSEStatus == 0) && (StartUpCounter !=((uint32_t)0xFFFF)));
 
   if(HSEStatus != 0)
   {
@@ -124,41 +128,50 @@ void SysClock()
     FLASH_ACR |= (uint32_t)((uint8_t)0x02); 
 
     //AHB 分频1
-    //RCC_CFGR &= ((uint32_t)0xFFFFFF0F);
+    RCC_CFGR &= ((uint32_t)0xFFFFFF0F);
     RCC_CFGR |= ((uint32_t)0x00000000);
     //APB2 1分频
-    //RCC_CFGR &= ((uint32_t)0xFFFFC7FF);
+    RCC_CFGR &= ((uint32_t)0xFFFFC7FF);
     RCC_CFGR |= ((uint32_t)0x00000000);
     //APB1 2分频
-    //RCC_CFGR &= ((uint32_t)0xFFFFF8FF);
+    RCC_CFGR &= ((uint32_t)0xFFFFF8FF);
     RCC_CFGR |= ((uint32_t)0x00000400);
     
+    //关闭锁相环
+    RCC_CR &= ~(1<<24);
+    //PLLXTPRE  PLLSRC  PLLMUL清零
     RCC_CFGR &= ((uint32_t)0xFFC0FFFF);
-    RCC_CFGR |= (((uint32_t)0x00000000) | ((uint32_t)0x00380000));
+
+    //PLLSRC选择内部HSI
+    RCC_CFGR &= ~(1<<16);
+    //设置倍频16
+    RCC_CFGR |= (14<<18);
+
     //使能PLL
     RCC_CR |= (1<<24);
     //等待PLL就绪
-    while((RCC_CR & (1<<25) == 0))
-      {
-      }
+    StartUpCounter = 0;
+    HSEStatus = 0;
+    do
+    {
+      HSEStatus = (RCC_CR & (1<<25));
+      StartUpCounter++;
+    } while((HSEStatus == 0) && (StartUpCounter !=((uint32_t)0xFF)));
 
+    //SW系统时钟选择PLL
     RCC_CFGR &= ((uint32_t)0xFFFFFFFC);
     RCC_CFGR |= ((uint32_t)0x00000002);
 
-    //系统选择PLL位
-    while ((RCC_CFGR & (uint32_t)0x0000000C) != (uint32_t)0x08)
-        {
-        }
-    //设置GPIOA8
-    RCC_APB2ENR |= (1<<2);
-    //清空控制PA8的端口位
-    GPIOA_CRH &= ~( 0x0F<< (4*0));	
-    // 配置PA8为复用推挽输出，速度为50M 1011
-    GPIOA_CRH |= (0x0B<<4*0);
+    //等待系统接入PLL
+    StartUpCounter = 0;
+    HSEStatus = 0;
+    do
+    {
+      HSEStatus = (RCC_CFGR & (uint32_t)0x0000000C);
+      StartUpCounter++;
+    } while((HSEStatus != (uint32_t)0x06) && (StartUpCounter !=((uint32_t)0xF)));
 
-    //MCO 系统时钟
-    //RCC_CFGR |= ((uint8_t)0x06);
-
-    *(uint8_t *)CFGR_BYTE4_ADDRESS = ((uint8_t)0x05);
   }
-}*/
+}
+
+#endif  //HSE
