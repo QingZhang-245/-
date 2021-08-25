@@ -1,0 +1,177 @@
+
+Discarded input sections
+
+ .text          0x00000000        0x0 start.o
+ .data          0x00000000        0x0 start.o
+ .bss           0x00000000        0x0 start.o
+ .text          0x00000000        0x0 main.o
+ .data          0x00000000        0x0 main.o
+ .bss           0x00000000        0x0 main.o
+ .text.MCO_Init
+                0x00000000        0x2 main.o
+ .text.delay_ms
+                0x00000000       0x44 main.o
+ .text.delay_s  0x00000000       0x48 main.o
+ .text          0x00000000        0x0 usart.o
+ .data          0x00000000        0x0 usart.o
+ .bss           0x00000000        0x0 usart.o
+ .text.USART_SendString
+                0x00000000       0x24 usart.o
+ .text.USART_SendHalfWord
+                0x00000000       0x12 usart.o
+ .text          0x00000000        0x0 clock.o
+ .data          0x00000000        0x0 clock.o
+ .bss           0x00000000        0x0 clock.o
+ .text          0x00000000        0x0 xmodem.o
+ .data          0x00000000        0x0 xmodem.o
+ .bss           0x00000000        0x0 xmodem.o
+ .text          0x00000000        0x0 flash.o
+ .data          0x00000000        0x0 flash.o
+ .bss           0x00000000        0x0 flash.o
+ .text.Flash_Erase
+                0x00000000       0x80 flash.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+FLASH            0x08000000         0x00010000         xr
+RAM              0x20000000         0x00010000         xrw
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+                0x20010000                _estack = 0x20010000
+
+.text           0x08000000      0xc08
+                0x08000000                . = ALIGN (0x4)
+                0x08000000                __text_start__ = .
+ start.o(*.cortex_vectors)
+ .rodata.cortex_vectors
+                0x08000000      0x404 start.o
+                0x08000000                cortex_vectors
+ start.o(.text.Reset_Handler)
+ .text.Reset_Handler
+                0x08000404       0x74 start.o
+                0x08000404                Reset_Handler
+ *(.text*)
+ .text.Jump     0x08000478       0x10 main.o
+                0x08000478                Jump
+ .text.Led_Init
+                0x08000488       0x84 main.o
+                0x08000488                Led_Init
+ .text.Key_Init
+                0x0800050c       0x30 main.o
+                0x0800050c                Key_Init
+ .text.Key_check
+                0x0800053c       0x24 main.o
+                0x0800053c                Key_check
+ .text.TIM6_ms_ON
+                0x08000560       0x30 main.o
+                0x08000560                TIM6_ms_ON
+ .text.TIM6_ms_OFF
+                0x08000590       0x20 main.o
+                0x08000590                TIM6_ms_OFF
+ .text.main     0x080005b0       0x8c main.o
+                0x080005b0                main
+ .text.Usart_Init
+                0x0800063c       0xbc usart.o
+                0x0800063c                Usart_Init
+ .text.USART_SendData
+                0x080006f8       0x18 usart.o
+                0x080006f8                USART_SendData
+ .text.SysClock
+                0x08000710      0x160 clock.o
+                0x08000710                SysClock
+ .text.RecData  0x08000870      0x180 xmodem.o
+                0x08000870                RecData
+ .text.xmodem   0x080009f0       0xc8 xmodem.o
+                0x080009f0                xmodem
+ .text.Flash_Unlock
+                0x08000ab8       0x18 flash.o
+                0x08000ab8                Flash_Unlock
+ .text.Flash_Lock
+                0x08000ad0       0x10 flash.o
+                0x08000ad0                Flash_Lock
+ .text.Flash_Init
+                0x08000ae0       0x20 flash.o
+                0x08000ae0                Flash_Init
+ .text.Flash_status
+                0x08000b00       0x4c flash.o
+                0x08000b00                Flash_status
+ .text.Flash_Write
+                0x08000b4c       0xbc flash.o
+                0x08000b4c                Flash_Write
+ *(.init)
+ *(.fini)
+ *(.rodata*)
+                0x08000c08                . = ALIGN (0x4)
+                0x08000c08                __text_end__ = .
+
+.glue_7         0x08000c08        0x0
+ .glue_7        0x08000c08        0x0 linker stubs
+
+.glue_7t        0x08000c08        0x0
+ .glue_7t       0x08000c08        0x0 linker stubs
+
+.vfp11_veneer   0x08000c08        0x0
+ .vfp11_veneer  0x08000c08        0x0 linker stubs
+
+.v4_bx          0x08000c08        0x0
+ .v4_bx         0x08000c08        0x0 linker stubs
+
+.iplt           0x08000c08        0x0
+ .iplt          0x08000c08        0x0 start.o
+
+.rel.dyn        0x08000c08        0x0
+ .rel.iplt      0x08000c08        0x0 start.o
+
+.data           0x20000000        0x0 load address 0x08000c08
+                0x20000000                . = ALIGN (0x4)
+                0x20000000                __data_start__ = .
+ *(.data*)
+                0x20000000                . = ALIGN (0x4)
+                0x20000000                __data_end__ = .
+
+.igot.plt       0x20000000        0x0
+ .igot.plt      0x20000000        0x0 start.o
+
+.bss            0x20000000      0x800
+                0x20000000                . = ALIGN (0x4)
+                0x20000000                __bss_start__ = .
+ *(.bss*)
+ .bss.AllData   0x20000000      0x800 xmodem.o
+                0x20000000                AllData
+                0x20000800                . = ALIGN (0x4)
+                0x20000800                __bss_end__ = .
+LOAD main.o
+LOAD start.o
+LOAD usart.o
+LOAD clock.o
+LOAD xmodem.o
+LOAD flash.o
+OUTPUT(main elf32-littlearm)
+LOAD linker stubs
+
+.comment        0x00000000       0x4d
+ .comment       0x00000000       0x4d start.o
+                                 0x4e (size before relaxing)
+ .comment       0x0000004d       0x4e main.o
+ .comment       0x0000004d       0x4e usart.o
+ .comment       0x0000004d       0x4e clock.o
+ .comment       0x0000004d       0x4e xmodem.o
+ .comment       0x0000004d       0x4e flash.o
+
+.ARM.attributes
+                0x00000000       0x2d
+ .ARM.attributes
+                0x00000000       0x2d start.o
+ .ARM.attributes
+                0x0000002d       0x2d main.o
+ .ARM.attributes
+                0x0000005a       0x2d usart.o
+ .ARM.attributes
+                0x00000087       0x2d clock.o
+ .ARM.attributes
+                0x000000b4       0x2d xmodem.o
+ .ARM.attributes
+                0x000000e1       0x2d flash.o
