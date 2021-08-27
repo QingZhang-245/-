@@ -7,22 +7,154 @@ extern void xmodem();
 extern void Flash_Erase();
 
 void TIM6_ms_ON(uint16_t ms);
-int  TIM6_ms_OFF();
-void Led_Init();
-void Key_Init();
-int  Key_check();
-void Jump();
+int  TIM6_ms_OFF(void);
+void Led_Init(void);
+void Key_Init(void);
+int  Key_check(void);
+void boot(void);
 void Usart_test(void);
+void EXTI0_KEY_Init(void);
 
 int main(void)
 {
 	RCC_APB1ENR |= (1<<4);//TIM6时钟初始化
 	Led_Init();//LEDGPIO初始化
-	Key_Init();
+	//Key_Init();
+	EXTI0_KEY_Init();
 	Usart_Init();//串口初始化
-	Usart_test();
 
+
+	while(1)
+	{
+		
+	}
+	return 0;
+}
+
+
+void EXTI0_KEY_Init(void)
+{
+	Key_Init();//GPIO 配置
+
+	//打开AFIO时钟
+	RCC_APB2ENR |= (1<<0);
+
+	//NVIC 中断配置
+	//设置中断优先级组划分
+	SCB->AIRCR = ((uint32_t)0x05FA0000) | ((uint32_t)0x500);
+	uint32_t tmppriority = 0x00, tmppre = 0x00, tmpsub = 0x0F;
+	tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700))>> 0x08;
+    tmppre = (0x4 - tmppriority);
+    tmpsub = tmpsub >> tmppriority;
+
+	//配置抢占优先级1
+    tmppriority = (uint32_t)(0) << tmppre;
+
+	//配置子优先级1
+    tmppriority |=  ((1) & tmpsub);
+
+    tmppriority = tmppriority << 0x04;
+    NVIC->IP[6] = tmppriority;//配置优先级
+    //Enable the Selected IRQ Channels -------------------------------------
+    NVIC->ISER[6 >> 0x05] =				//使能中断
+    (uint32_t)0x01 << (6 & (uint8_t)0x1F);
+	
+	//选择exti的输入信号源
+	uint32_t tmp = 0x00;
+	tmp = ((uint32_t)0x0F) << (0x04 * (((uint8_t)0x00) & (uint8_t)0x03));
+	AFIO->EXTICR[((uint8_t)0x00) >> 0x02] &= ~tmp;
+	AFIO->EXTICR[((uint8_t)0x00) >> 0x02] |= (((uint32_t)((uint8_t)0x00)) << (0x04 * (((uint8_t)0x00) & (uint8_t)0x03)));
+
+	//输入线，中断模式，上升沿模式，使能中断
+
+	tmp = (uint32_t)EXTI_BASE;
+	//Clear EXTI line configuration 
+    EXTI->IMR &= ~((uint32_t)0x00001);		//清除中断请求
+    EXTI->EMR &= ~((uint32_t)0x00001);		//清除事件请求
+    tmp += 0x00;
+    *(__IO uint32_t *) tmp |= ((uint32_t)0x00001);	//使能中断请求
+    // Clear Rising Falling edge configuration 
+    EXTI->RTSR &= ~((uint32_t)0x00001);		//清除上升沿触发
+    EXTI->FTSR &= ~((uint32_t)0x00001);		//清除下降沿触发
+    // Select the trigger for the selected external interrupts 
+	tmp = (uint32_t)EXTI_BASE;	
+	tmp += 0x08;
+
+	*(__IO uint32_t *) tmp |= ((uint32_t)0x00001);		//使能上升沿触发
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//发送数据包
+void Usart_test(void)
+{
+	uint16_t ch;
+	
+	//原样发送
+	while (1)
+	{
+		if((USART1_SR & (1<<5)) != 0)	//读数据非空
+		{
+			ch = (uint16_t)(USART1_DR & (uint16_t)0x01FF);//收到信号
+			USART_SendData(ch);
+		}
+	}
 /*
+	//发送单字节
+	while(1)
+	{	
+		if((USART1_SR & (1<<5)) != 0)	//读数据非空
+		{
+			ch = (char)(USART1_DR & (uint16_t)0x01FF);//收到信号
+			switch(ch)
+			{
+				case '1':
+					USART_SendHalfWord(ACK);
+					break;
+				case '2':
+					//USART_SendString("10101");
+					USART_SendHalfWord((uint16_t)(111));
+					break;
+				default:
+					USART_SendHalfWord((uint16_t)(58));
+					break;
+			}
+		}
+	}
+*/
+}
+
+
+
+
+void Jump()
+{
+	//(*(void(*) ())(*((uint32_t*)(WRITE_START_ADDR + 0x4))))();
+	((void(*)(void))(*((uint32_t*)(WRITE_START_ADDR + 0x4))))();
+}
+
+
+void boot(void)
+{
 	TIM6_ms_ON(5000);
 	while (!TIM6_ms_OFF())
 	{
@@ -36,15 +168,8 @@ int main(void)
 	}
 	LED_Blue_ON;
 	Jump();
-*/
-	return 0;
 }
 
-void Jump()
-{
-	//(*(void(*) ())(*((uint32_t*)(WRITE_START_ADDR + 0x4))))();
-	((void(*)(void))(*((uint32_t*)(WRITE_START_ADDR + 0x4))))();
-}
 
 
 void Led_Init()
@@ -174,44 +299,4 @@ void delay_s(uint16_t s)//秒级延时
 }
 
 
-//发送数据包
-void Usart_test(void)
-{
-	char rec[20];
-	char* p=&rec[0];
-	uint16_t ch;
-	
-	//原样发送
-	while (1)
-	{
-		if((USART1_SR & (1<<5)) != 0)	//读数据非空
-		{
-			ch = (uint16_t)(USART1_DR & (uint16_t)0x01FF);//收到信号
-			USART_SendData(ch);
-		}
-	}
-/*
-	//发送单字节
-	while(1)
-	{	
-		if((USART1_SR & (1<<5)) != 0)	//读数据非空
-		{
-			ch = (char)(USART1_DR & (uint16_t)0x01FF);//收到信号
-			switch(ch)
-			{
-				case '1':
-					USART_SendHalfWord(ACK);
-					break;
-				case '2':
-					//USART_SendString("10101");
-					USART_SendHalfWord((uint16_t)(111));
-					break;
-				default:
-					USART_SendHalfWord((uint16_t)(58));
-					break;
-			}
-		}
-	}
-*/
-}
 	

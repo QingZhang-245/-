@@ -2,7 +2,7 @@ cc = arm-none-eabi-gcc
 ld = arm-none-eabi-ld
 objcopy = arm-none-eabi-objcopy
 lds = link.ld
-target = main.o start.o usart.o clock.o xmodem.o flash.o
+target = main.o start.o usart.o clock.o xmodem.o flash.o interrup.o FIFO.o
 output = main.hex
 
 

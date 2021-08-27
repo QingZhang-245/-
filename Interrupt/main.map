@@ -1,0 +1,174 @@
+
+Discarded input sections
+
+ .text          0x00000000        0x0 start.o
+ .data          0x00000000        0x0 start.o
+ .bss           0x00000000        0x0 start.o
+ .text          0x00000000        0x0 main.o
+ .data          0x00000000        0x0 main.o
+ .bss           0x00000000        0x0 main.o
+ .text.Delay    0x00000000       0x1c main.o
+ .text.Led_Init
+                0x00000000       0x84 main.o
+ .text          0x00000000        0x0 usart.o
+ .data          0x00000000        0x0 usart.o
+ .bss           0x00000000        0x0 usart.o
+ .text.Usart_Init
+                0x00000000       0xbc usart.o
+ .text.putchar  0x00000000       0x2c usart.o
+ .text          0x00000000        0x0 clock.o
+ .data          0x00000000        0x0 clock.o
+ .bss           0x00000000        0x0 clock.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+FLASH            0x0800a000         0x00010000         xr
+RAM              0x20000000         0x00010000         xrw
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+                0x2001a000                _estack = 0x2001a000
+
+.text           0x0800a000      0x74c
+                0x0800a000                . = ALIGN (0x4)
+                0x0800a000                __text_start__ = .
+ start.o(*.cortex_vectors)
+ .rodata.cortex_vectors
+                0x0800a000      0x404 start.o
+                0x0800a000                cortex_vectors
+ start.o(.text.Reset_Handler)
+ .text.Reset_Handler
+                0x0800a404       0x74 start.o
+                0x0800a404                Reset_Handler
+ *(.text*)
+ .text.NMI_Handler
+                0x0800a478        0x2 start.o
+                0x0800a478                NMI_Handler
+ .text.HardFault_Handler
+                0x0800a47a        0x2 start.o
+                0x0800a47a                HardFault_Handler
+ .text.MemManage_Handler
+                0x0800a47c        0x2 start.o
+                0x0800a47c                MemManage_Handler
+ .text.BusFault_Handler
+                0x0800a47e        0x2 start.o
+                0x0800a47e                BusFault_Handler
+ .text.UsageFault_Handler
+                0x0800a480        0x2 start.o
+                0x0800a480                UsageFault_Handler
+ .text.SVC_Handler
+                0x0800a482        0x2 start.o
+                0x0800a482                SVC_Handler
+ .text.DebugMon_Handler
+                0x0800a484        0x2 start.o
+                0x0800a484                DebugMon_Handler
+ .text.PendSV_Handler
+                0x0800a486        0x2 start.o
+                0x0800a486                PendSV_Handler
+ .text.SysTick_Handler
+                0x0800a488        0x2 start.o
+                0x0800a488                SysTick_Handler
+ .text.WWDG_IRQHandler
+                0x0800a48a        0x2 start.o
+                0x0800a48a                WWDG_IRQHandler
+ .text.PVD_IRQHandler
+                0x0800a48c        0x2 start.o
+                0x0800a48c                PVD_IRQHandler
+ .text.TAMPER_IRQHandler
+                0x0800a48e        0x2 start.o
+                0x0800a48e                TAMPER_IRQHandler
+ .text.RTC_IRQHandler
+                0x0800a490        0x2 start.o
+                0x0800a490                RTC_IRQHandler
+ .text.FLASH_IRQHandler
+                0x0800a492        0x2 start.o
+                0x0800a492                FLASH_IRQHandler
+ .text.RCC_IRQHandler
+                0x0800a494        0x2 start.o
+                0x0800a494                RCC_IRQHandler
+ .text.EXTI1_IRQHandler
+                0x0800a496        0x2 start.o
+                0x0800a496                EXTI1_IRQHandler
+ .text.EXTI_GetITStatus
+                0x0800a498       0x1c start.o
+                0x0800a498                EXTI_GetITStatus
+ .text.EXTI0_IRQHandler
+                0x0800a4b4       0x48 start.o
+                0x0800a4b4                EXTI0_IRQHandler
+ .text.Key_Init
+                0x0800a4fc       0x30 main.o
+                0x0800a4fc                Key_Init
+ .text.main     0x0800a52c       0xb0 main.o
+                0x0800a52c                main
+ .text.USART_SendData
+                0x0800a5dc       0x10 usart.o
+                0x0800a5dc                USART_SendData
+ .text.SysClock
+                0x0800a5ec      0x160 clock.o
+                0x0800a5ec                SysClock
+ *(.init)
+ *(.fini)
+ *(.rodata*)
+                0x0800a74c                . = ALIGN (0x4)
+                0x0800a74c                __text_end__ = .
+
+.glue_7         0x0800a74c        0x0
+ .glue_7        0x0800a74c        0x0 linker stubs
+
+.glue_7t        0x0800a74c        0x0
+ .glue_7t       0x0800a74c        0x0 linker stubs
+
+.vfp11_veneer   0x0800a74c        0x0
+ .vfp11_veneer  0x0800a74c        0x0 linker stubs
+
+.v4_bx          0x0800a74c        0x0
+ .v4_bx         0x0800a74c        0x0 linker stubs
+
+.iplt           0x0800a74c        0x0
+ .iplt          0x0800a74c        0x0 start.o
+
+.rel.dyn        0x0800a74c        0x0
+ .rel.iplt      0x0800a74c        0x0 start.o
+
+.data           0x20000000        0x0 load address 0x0800a74c
+                0x20000000                . = ALIGN (0x4)
+                0x20000000                __data_start__ = .
+ *(.data*)
+                0x20000000                . = ALIGN (0x4)
+                0x20000000                __data_end__ = .
+
+.igot.plt       0x20000000        0x0
+ .igot.plt      0x20000000        0x0 start.o
+
+.bss            0x20000000        0x0
+                0x20000000                . = ALIGN (0x4)
+                0x20000000                __bss_start__ = .
+ *(.bss*)
+                0x20000000                . = ALIGN (0x4)
+                0x20000000                __bss_end__ = .
+LOAD main.o
+LOAD start.o
+LOAD usart.o
+LOAD clock.o
+OUTPUT(main elf32-littlearm)
+LOAD linker stubs
+
+.comment        0x00000000       0x4d
+ .comment       0x00000000       0x4d start.o
+                                 0x4e (size before relaxing)
+ .comment       0x0000004d       0x4e main.o
+ .comment       0x0000004d       0x4e usart.o
+ .comment       0x0000004d       0x4e clock.o
+
+.ARM.attributes
+                0x00000000       0x2d
+ .ARM.attributes
+                0x00000000       0x2d start.o
+ .ARM.attributes
+                0x0000002d       0x2d main.o
+ .ARM.attributes
+                0x0000005a       0x2d usart.o
+ .ARM.attributes
+                0x00000087       0x2d clock.o

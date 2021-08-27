@@ -1,5 +1,4 @@
 #include "inc.h"
-void NVIC_Init(void);
 void Usart_Init()
 {
   uint32_t tmpreg = 0x00, apbclock = 0x00;
@@ -27,7 +26,7 @@ void Usart_Init()
   //清零CR1
   USART1_CR1 &= 0xE9F3;  
   //定义帧长度
-  USART1_CR1 |= (M<<12);
+  USART1_CR1 &= ~(M<<12);
   //使能校验位
   USART1_CR1 &= ~(PCE<<10);
   //设置校验位
@@ -40,8 +39,6 @@ void Usart_Init()
   USART1_CR3 &= ~(CTSE<<9);
   USART1_CR3 &= ~(RTSE<<9);
 
-
-
   //设置波特率
   apbclock = PCLK2_Frequency;
   integerdivider = ((25*apbclock)/(4*BAUDRATE));
@@ -49,91 +46,39 @@ void Usart_Init()
   fractionaldivider = integerdivider - (100 * (tmpreg >> 4));
   tmpreg |= ((((fractionaldivider * 16) + 50) / 100)) & ((uint8_t)0x0F);
   USART1_BRR = (uint16_t)tmpreg;
-
-//-------------------------中断配置------
-  NVIC_Init();
-  USART1_CR1 |= (1<<5); //使能接收中断
+/*
+  USART1_BRR  = 0x0000; 
+	USART1_BRR  = 0x271;
+*/
   //UE使能
   USART1_CR1 |= (1<<13);
 }
 
-void NVIC_Init(void)
-{
-  uint32_t tmppriority = 0x00, tmppre = 0x00, tmpsub = 0x0F;
-  //NVIC 中断配置
-  //设置中断优先级组划分（1位抢占优先级3位子优先级）
-  SCB->AIRCR = ((uint32_t)0x05FA0000) | ((uint32_t)0x500);
-
-  tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700))>> 0x08;
-  tmppre = (0x4 - tmppriority);
-  tmpsub = tmpsub >> tmppriority;
-
-  //配置抢占优先级1
-  tmppriority = (uint32_t)(1) << tmppre;
-  //配置子优先级1
-  tmppriority |=  ((1) & tmpsub);
-
-  tmppriority = tmppriority << 0x04;
-  NVIC->IP[37] = tmppriority;//配置优先级
-  //Enable the Selected IRQ Channels -------------------------------------
-  NVIC->ISER[37 >> 0x05] =				//使能中断
-  (uint32_t)0x01 << (37 & (uint8_t)0x1F);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*******************发送一个字节**************************/
 void USART_SendData(uint16_t Data)
 {
-  USART1_DR = ((uint16_t)Data & (uint16_t)0xFF);
-  while ((USART1_SR & (1<<7)) == 0);
+  USART1_DR = (Data & (uint16_t)0x01FF);
 }
 
-/*****************发送字符串**********************/
-void USART_SendString(char *str)
+
+int putchar(int c)
 {
-	unsigned int k=0;
-  do 
+  while ((USART1_SR & (1<<7)) != 0)
   {
-      USART_SendData(*(str + k));
-      k++;
-  } while(*(str + k)!='\0');
-  
-  while((USART1_SR & (1<<6)) == 0);
+    USART1_DR = (uint8_t)(c & (uint16_t)0x01FF);
+    if (c == '\n') putchar('\r');
+    return c;
+  }
 }
-void USART_SendHalfWord(uint16_t ch)
-{
-	uint8_t temp_h, temp_l;
-	
-	temp_h = ((uint16_t)(ch)&0XFF00)>>8;
-	temp_l = (uint16_t)(ch)&0XFF;
-	
-	USART_SendData(temp_h);	
-	USART_SendData(temp_l);	
-}
+
+
+
 
 
 /*
 //重定向后能使用printf函数
 int fputc(int ch, FILE *f)
 {
-		//发送一个字节到串口
+		//*发送一个字节到串口
 		USART_SendData((uint8_t) ch);
 		
 		// 等待发送完毕 

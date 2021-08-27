@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "inc.h": "c",
+        "stdio.h": "c",
+        "_ansi.h": "c",
+        "stdarg.h": "c",
+        "types.h": "c"
+    }
+}
